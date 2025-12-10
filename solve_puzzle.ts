@@ -12,7 +12,7 @@ async function solveJavascriptPuzzle(javascriptPuzzle: string) {
       createRequest: () => {
          return {
             open(method: string, url: string, async: boolean) {
-               // `/lib/mason/puzzles/30.ajax.html?q=${Math.floor(Date.now() / 1000)}${/\w{8}\.\d{3}/}`
+               // `/lib/mason/puzzles/30.ajax.html?q=${getTimestampSeconds()}${/\w{8}\.\d{3}/}`
                resolve(url);
             },
             send() { }

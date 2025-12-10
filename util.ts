@@ -66,3 +66,7 @@ export function delayGeneratorMs() {
 
    return a1 * Math.sin(t1) + a2 * Math.sin(t2) + a3 * Math.sin(t3) + e;
 }
+
+export function getTimestampSeconds() {
+   return Math.floor(Date.now() / 1000);
+}

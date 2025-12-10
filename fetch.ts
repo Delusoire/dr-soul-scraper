@@ -4,7 +4,7 @@ import { getSetCookies } from "@std/http/cookie";
 
 import { DOCSOLUS_ID_COOKIE_NAME, DOCSOLUS_ID_COOKIE_VALUE, DOCSOLUS_URL } from "./config.ts";
 import { FutureQueue } from "./request.ts";
-import { delayGeneratorMs, generateRandomId } from "./util.ts";
+import { delayGeneratorMs, generateRandomId, getTimestampSeconds } from "./util.ts";
 
 import DEFAULT_HEADERS from "./headers.jsonc" with { type: "json" };
 
@@ -57,7 +57,7 @@ export class SimpleSession {
 }
 
 export const DOCSOLUS_SESSION = new SimpleSession();
-DOCSOLUS_SESSION.setCookie(DOCSOLUS_ID_COOKIE_NAME, DOCSOLUS_ID_COOKIE_VALUE);
+DOCSOLUS_SESSION.setCookie(DOCSOLUS_ID_COOKIE_NAME, `${DOCSOLUS_ID_COOKIE_VALUE}.${getTimestampSeconds()}`);
 
 export async function fetchCorrigePage(referrer: string, corrigeId: string) {
    const response = await DOCSOLUS_SESSION.fetch(`${DOCSOLUS_URL}/prepa/sci/adc/bin/view.corrige.html?q=${corrigeId}`, {

@@ -1,40 +1,23 @@
 import { assert, unreachable } from "@std/assert";
 
-import { DOCSOLUS_URL } from "./config.ts";
+import { DOCSOLUS_URL, INCLUDE_MINIATURES } from "./config.ts";
 import { fetchCorrigePage, fetchQuestionPage } from "./fetch.ts";
-import { solvePuzzleChallenge } from "./solve_puzzle.ts";
 import { outvalJavascriptLinks } from "./outval_links.ts";
+import { solvePuzzleChallenge } from "./solve_puzzle.ts";
+import type { Corrige, ImageResource, PdfResource, PuzzleResource, Question, Require } from "./types.ts";
+import { parseYearFromCorrigeId } from "./util.ts";
 
-interface ImageResource {
-   type: "image",
-   src: string,
+export function downloadMiniature(corrigeId: string, questionId: string) {
+   const year = parseYearFromCorrigeId(corrigeId);
+   const url = `${DOCSOLUS_URL}/prepa/sci/adc/img/miniatures/${year}/${corrigeId}/${questionId}.w100px.jpg`;
+
+   const miniature: ImageResource = {
+      type: "image",
+      src: url,
+   };
+
+   return miniature;
 }
-
-interface PuzzleResource {
-   type: "puzzle",
-   tiles: string[],
-}
-
-interface PdfResource {
-   type: "pdf",
-   url: string,
-}
-
-type QuestionResource = ImageResource | PuzzleResource;
-
-type Question = {
-   id: string,
-   short: string,
-   hash: string,
-   resource: QuestionResource;
-};
-
-type Corrige = {
-   id: string,
-   questions?: Question[],
-   enonce?: PdfResource,
-   rapport?: PdfResource,
-};
 
 async function downloadQuestion(questionId: string, md5Hash: string) {
    const referrer = `${DOCSOLUS_URL}/prepa/sci/adc/bin/view.question.html?q=${questionId}&h=${md5Hash}`;
@@ -69,7 +52,7 @@ async function downloadQuestion(questionId: string, md5Hash: string) {
    unreachable("Question resource not found");
 }
 
-async function downloadCorrige(corrigeId: string): Promise<Corrige> {
+export async function downloadCorrige(corrigeId: string) {
    const referrer = DOCSOLUS_URL;
 
    const doc = await fetchCorrigePage(referrer, corrigeId);
@@ -81,9 +64,9 @@ async function downloadCorrige(corrigeId: string): Promise<Corrige> {
 
    const links = await outvalJavascriptLinks(injectedScriptText);
 
-   const corrige = {
+   const corrige: Require<Corrige, "questions"> = {
       id: corrigeId,
-      questions: [] as Question[],
+      questions: [],
    };
 
    for (const link of links) {
@@ -92,6 +75,7 @@ async function downloadCorrige(corrigeId: string): Promise<Corrige> {
          short: link.short,
          hash: link.hash,
          resource: await downloadQuestion(link.id, link.hash),
+         miniature: INCLUDE_MINIATURES ? downloadMiniature(corrigeId, link.id) : undefined,
       };
 
       corrige.questions.push(question);
@@ -100,13 +84,10 @@ async function downloadCorrige(corrigeId: string): Promise<Corrige> {
    return corrige;
 }
 
-
-async function downloadPdfs(corrigeId: string): Promise<Corrige> {
-   const yearStr = corrigeId.slice(-4);
-   const year = parseInt(yearStr, 10);
-   assert(!isNaN(year), "Invalid year in corrige ID");
-   const enonceUrl = DOCSOLUS_URL + "/prepa/sci/adc/pdf/enonces.pdf/" + year + "/" + corrigeId + ".enonce.pdf";
-   const rapportUrl = DOCSOLUS_URL + "/prepa/sci/adc/pdf/rapports.pdf/" + year + "/" + corrigeId + ".rapport.pdf";
+export function downloadPdfs(corrigeId: string) {
+   const year = parseYearFromCorrigeId(corrigeId);
+   const enonceUrl = `${DOCSOLUS_URL}/prepa/sci/adc/pdf/enonces.pdf/${year}/${corrigeId}.enonce.pdf`;
+   const rapportUrl = `${DOCSOLUS_URL}/prepa/sci/adc/pdf/rapports.pdf/${year}/${corrigeId}.rapport.pdf`;
 
    const enonce: PdfResource = {
       type: "pdf",
@@ -118,7 +99,7 @@ async function downloadPdfs(corrigeId: string): Promise<Corrige> {
       url: rapportUrl,
    };
 
-   const corrige: Corrige = {
+   const corrige: Require<Corrige, "enonce" | "rapport"> = {
       id: corrigeId,
       enonce,
       rapport,

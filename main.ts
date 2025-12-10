@@ -1,3 +1,4 @@
+import { getLogger } from "@logtape/logtape";
 import { assert, unreachable } from "@std/assert";
 import { escape } from "@std/regexp/escape";
 
@@ -9,7 +10,11 @@ import { outvalJavascriptLinks } from "./outval_links.ts";
 import { solvePuzzleChallenge } from "./solve_puzzle.ts";
 import type { Corrige, ImageResource, PdfResource, PuzzleResource, Question, Require } from "./types.ts";
 
+const l = getLogger(["dss", "main"]);
+
 export async function listCorriges() {
+   l.info`Listing corriges...`;
+
    const html = await fetchAcceuil();
 
    const corrigeIdRegex = new RegExp(`href="${escape(buildCorrigeUrl(""))}(?<id>[^"]+)"`, "g");
@@ -20,6 +25,8 @@ export async function listCorriges() {
 }
 
 export function downloadMiniature(corrigeId: string, questionId: string) {
+   l.info`Downloading miniature for question ${questionId}...`;
+
    const url = buildMiniatureUrl(corrigeId, questionId);
 
    const miniature: ImageResource = {
@@ -31,6 +38,8 @@ export function downloadMiniature(corrigeId: string, questionId: string) {
 }
 
 export function downloadPdfs(corrigeId: string) {
+   l.info`Downloading PDFs for corrige ${corrigeId}...`;
+
    const enonce: PdfResource = {
       type: "pdf",
       url: DOCSOLUS_URL + buildPdfEnonceUrl(corrigeId),
@@ -51,6 +60,8 @@ export function downloadPdfs(corrigeId: string) {
 }
 
 export async function downloadQuestion(corrigeId: string, questionId: string, md5Hash: string) {
+   l.info`Downloading question ${questionId}...`;
+
    const doc = await fetchQuestionPage(corrigeId, questionId, md5Hash);
 
    const images = doc.body.getElementsByClassName("img-corrige-q1");
@@ -82,6 +93,8 @@ export async function downloadQuestion(corrigeId: string, questionId: string, md
 }
 
 export async function downloadCorrige(corrigeId: string) {
+   l.info`Downloading corrige ${corrigeId}...`;
+
    const doc = await fetchCorrigePage(corrigeId);
 
    const scripts = doc.body.getElementsByTagName("SCRIPT");

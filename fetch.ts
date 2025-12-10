@@ -47,7 +47,7 @@ export class SimpleSession {
 
       const cookieHeader = this.#cookies.entries()
          .map(([name, value]) => `${name}=${value}`)
-         .reduce((acc, cookie) => acc + cookie + "; ", "");
+         .toArray().join("; ");
 
       return cookieHeader;
    }
@@ -123,10 +123,9 @@ export async function fetchQuestionPage(corrigeId: string, questionId: string, m
    });
 
    const responseText = await response.text();
-
    const parser = new DOMParser();
-
    const doc = parser.parseFromString(responseText, "text/html");
+
    return doc;
 }
 
@@ -159,7 +158,7 @@ export async function fetchLehmerPayload(questionId: string, mdf5Hash: string, p
 
    const payload = responseText30.slice(10);
 
-   return payload;
+   return { timestamp, payload };
 }
 
 export function buildMiniatureUrl(corrigeId: string, questionId: string) {

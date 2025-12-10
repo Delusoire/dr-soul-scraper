@@ -31,11 +31,9 @@ export class FutureQueue {
          const task = this.#queue.shift();
          if (task) await task();
 
-         if (this.#queue.length > 0) {
-            const delayMs = this.#delayGenerator();
-            l.debug`Delaying next task by ${delayMs} ms`;
-            await delay(delayMs);
-         }
+         const delayMs = this.#delayGenerator();
+         l.debug`Delaying next task by ${delayMs} ms`;
+         await delay(delayMs);
       }
 
       this.#isProcessing = false;

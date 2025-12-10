@@ -70,3 +70,17 @@ export function delayGeneratorMs() {
 export function getTimestampSeconds() {
    return Math.floor(Date.now() / 1000);
 }
+
+export function parseFixedWidthIntegers(digitStream: string, chunkSize: number) {
+   const chunkCount = Math.floor(digitStream.length / chunkSize);
+
+   const integerSegments = new Array<number>(chunkCount);
+
+   for (let i = 0; i < chunkCount; i++) {
+      const start = chunkSize * i;
+      const segmentString = digitStream.slice(start, start + chunkSize);
+      integerSegments[i] = parseInt(segmentString, 10);;
+   }
+
+   return integerSegments;
+}

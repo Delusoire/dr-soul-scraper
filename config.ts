@@ -1,4 +1,4 @@
-import { assert } from "node:console";
+import { assert } from "@std/assert";
 
 export const DOCSOLUS_URL = "https://www.doc-solus.fr";
 

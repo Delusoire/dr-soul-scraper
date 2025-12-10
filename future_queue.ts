@@ -1,6 +1,9 @@
 import { delay } from "@std/async/delay";
+import { getLogger } from "@logtape/logtape";
 
-import { lerp, wrapTask, type Task } from "./util.ts";
+import { wrapTask, type Task } from "./util.ts";
+
+const l = getLogger(["dss", "queue"]);
 
 export class FutureQueue {
    #queue = new Array<Task>();
@@ -29,7 +32,9 @@ export class FutureQueue {
          if (task) await task();
 
          if (this.#queue.length > 0) {
-            await delay(this.#delayGenerator());
+            const delayMs = this.#delayGenerator();
+            l.debug`Delaying next task by ${delayMs} ms`;
+            await delay(delayMs);
          }
       }
 

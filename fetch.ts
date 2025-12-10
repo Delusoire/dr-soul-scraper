@@ -3,10 +3,13 @@ import { assert } from "@std/assert";
 import { getSetCookies } from "@std/http/cookie";
 
 import { DOCSOLUS_ID_COOKIE_NAME, DOCSOLUS_ID_COOKIE_VALUE, DOCSOLUS_URL, PROXY_PASSWORD, PROXY_URL, PROXY_USERNAME } from "./config.ts";
-import { FutureQueue } from "./request.ts";
+import { FutureQueue } from "./future_queue.ts";
 import { delayGeneratorMs, generateRandomId, getTimestampSeconds, parseYearFromCorrigeId } from "./util.ts";
 
 import DEFAULT_HEADERS from "./headers.json" with { type: "json" };
+import { getLogger } from "@logtape/logtape";
+
+const l = getLogger(["dss", "fetcher"]);
 
 function initializeHtppClient() {
    const options: Deno.CreateHttpClientOptions = {};
@@ -50,7 +53,12 @@ export class SimpleSession {
    }
 
    #scheduleFetch(input: RequestInfo | URL, init?: RequestInit & { client?: Deno.HttpClient; }) {
-      return this.#scheduler.add(() => fetch(input, init));
+      l.trace`Scheduling fetch: ${input.toString()}`;
+      return this.#scheduler.add(async () => {
+         const response = await fetch(input, init);
+         l.trace`Fetched: ${response.url}`;
+         return response;
+      });
    }
 
    async fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
@@ -173,15 +181,15 @@ export function buildCorrigeUrl(corrigeId: string) {
    return `/prepa/sci/adc/bin/view.corrige.html?q=${corrigeId}`;
 }
 
-function buildQuestionUrl(questionId: string, md5Hash: string) {
+export function buildQuestionUrl(questionId: string, md5Hash: string) {
    return `/prepa/sci/adc/bin/view.question.html?q=${questionId}&h=${md5Hash}`;
 }
 
-function buildTilesPuzzleUrl(questionId: string, md5Hash: string, id: string) {
+export function buildTilesPuzzleUrl(questionId: string, md5Hash: string, id: string) {
    return `/lib/mason/puzzles/20.js.html?auth=1&question=${questionId}&divId=${id}&md5=${md5Hash}`;
 }
 
-function buildLehmerPayloadUrl(code: string) {
+export function buildLehmerPayloadUrl(code: string) {
    const codeRegex = /\w{8}\.\d{3}/;
    assert(codeRegex.test(code), "Invalid Lehmer code");
    return `/lib/mason/puzzles/30.ajax.html?q=${getTimestampSeconds()}${code}`;

@@ -1,13 +1,17 @@
 import vm from "node:vm";
 
+import { getLogger } from "@logtape/logtape";
 import { unreachable } from "@std/assert";
 
 import { fetchLehmerPayload, fetchTilesPuzzle } from "./fetch.ts";
 import { isBase64Array } from "./util.ts";
 
+const l = getLogger(["dss", "solver"]);
+
 async function solveJavascriptPuzzle(javascriptPuzzle: string) {
    const { promise, resolve } = Promise.withResolvers<string>();
 
+   l.info`Solving javascript puzzle...`;
    const sandbox = vm.createContext({
       createRequest: () => {
          return {
@@ -22,9 +26,16 @@ async function solveJavascriptPuzzle(javascriptPuzzle: string) {
 
    const keys = new Set(Object.keys(sandbox));
 
+   l.trace`Running javascript puzzle in sandbox...`;
    vm.runInContext(javascriptPuzzle, sandbox);
 
    const lehmerPayloadUrl = await promise;
+   l.trace`Extracted Lehmer payload URL: ${lehmerPayloadUrl}`;
+
+   const tileDataUrls = extractTileDataUrls(sandbox);
+   l.trace`Extracted ${tileDataUrls.length} tile data URLs`;
+
+   return { lehmerPayloadUrl, tileDataUrls };
 
    function extractTileDataUrls(sandbox: vm.Context) {
       for (const key of Object.keys(sandbox)) {
@@ -40,13 +51,7 @@ async function solveJavascriptPuzzle(javascriptPuzzle: string) {
 
       unreachable("Tile data URLs not found in sandbox");
    }
-
-   const tileDataUrls = extractTileDataUrls(sandbox);
-
-   return { lehmerPayloadUrl, tileDataUrls };
 }
-
-
 
 export async function solvePuzzleChallenge(questionId: string, md5Hash: string) {
    const tilesPuzzle = await fetchTilesPuzzle(questionId, md5Hash);
@@ -58,6 +63,8 @@ export async function solvePuzzleChallenge(questionId: string, md5Hash: string) 
    const tileMap = generateMap(lehmerPayload);
 
    const orderedTileDataUrls = tileMap.map(i => tileDataUrls[i]);
+
+   l.trace`Solved puzzle with ${orderedTileDataUrls.length} tiles`;
 
    return orderedTileDataUrls;
 }
@@ -104,6 +111,8 @@ function invertPermutation(arr: Array<number>) {
 }
 
 function generateMap(payload: string) {
+   l.trace`Generating tile map from Lehmer payload...`;
+
    // Extract all digits 0-9
    const matchedDigits = payload.match(/[0-9]/g);
    if (matchedDigits === null || matchedDigits.length <= 1) {

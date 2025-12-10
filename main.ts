@@ -1,11 +1,23 @@
 import { assert, unreachable } from "@std/assert";
 import { escape } from "@std/regexp/escape";
 
+import "./logger.ts";
+
 import { DOCSOLUS_URL, INCLUDE_MINIATURES } from "./config.ts";
 import { buildCorrigeUrl, buildMiniatureUrl, buildPdfEnonceUrl, buildPdfRapportUrl, fetchAcceuil, fetchCorrigePage, fetchQuestionPage } from "./fetch.ts";
 import { outvalJavascriptLinks } from "./outval_links.ts";
 import { solvePuzzleChallenge } from "./solve_puzzle.ts";
 import type { Corrige, ImageResource, PdfResource, PuzzleResource, Question, Require } from "./types.ts";
+
+export async function listCorriges() {
+   const html = await fetchAcceuil();
+
+   const corrigeIdRegex = new RegExp(`href="${escape(buildCorrigeUrl(""))}(?<id>[^"]+)"`, "g");
+   const matches = html.matchAll(corrigeIdRegex);
+   const corrigeIds = Array.from(matches, match => match.groups!.id);
+
+   return corrigeIds;
+}
 
 export function downloadMiniature(corrigeId: string, questionId: string) {
    const url = buildMiniatureUrl(corrigeId, questionId);
@@ -18,9 +30,27 @@ export function downloadMiniature(corrigeId: string, questionId: string) {
    return miniature;
 }
 
-async function downloadQuestion(corrigeId: string, questionId: string, md5Hash: string) {
-   const referrer = `${DOCSOLUS_URL}/prepa/sci/adc/bin/view.question.html?q=${questionId}&h=${md5Hash}`;
+export function downloadPdfs(corrigeId: string) {
+   const enonce: PdfResource = {
+      type: "pdf",
+      url: DOCSOLUS_URL + buildPdfEnonceUrl(corrigeId),
+   };
 
+   const rapport: PdfResource = {
+      type: "pdf",
+      url: DOCSOLUS_URL + buildPdfRapportUrl(corrigeId),
+   };
+
+   const corrige: Require<Corrige, "enonce" | "rapport"> = {
+      id: corrigeId,
+      enonce,
+      rapport,
+   };
+
+   return corrige;
+}
+
+export async function downloadQuestion(corrigeId: string, questionId: string, md5Hash: string) {
    const doc = await fetchQuestionPage(corrigeId, questionId, md5Hash);
 
    const images = doc.body.getElementsByClassName("img-corrige-q1");
@@ -79,35 +109,4 @@ export async function downloadCorrige(corrigeId: string) {
    }
 
    return corrige;
-}
-
-export function downloadPdfs(corrigeId: string) {
-   const enonce: PdfResource = {
-      type: "pdf",
-      url: DOCSOLUS_URL + buildPdfEnonceUrl(corrigeId),
-   };
-
-   const rapport: PdfResource = {
-      type: "pdf",
-      url: DOCSOLUS_URL + buildPdfRapportUrl(corrigeId),
-   };
-
-   const corrige: Require<Corrige, "enonce" | "rapport"> = {
-      id: corrigeId,
-      enonce,
-      rapport,
-   };
-
-   return corrige;
-}
-
-
-export async function listCorriges() {
-   const html = await fetchAcceuil();
-
-   const corrigeIdRegex = new RegExp(`href="${escape(buildCorrigeUrl(""))}(?<id>[^"]+)"`, "g");
-   const matches = html.matchAll(corrigeIdRegex);
-   const corrigeIds = Array.from(matches, match => match.groups!.id);
-
-   return corrigeIds;
 }

@@ -2,15 +2,15 @@ import { DOMParser } from "@b-fuze/deno-dom";
 import { assert } from "@std/assert";
 import { getSetCookies } from "@std/http/cookie";
 
-import { DOCSOLUS_ID_COOKIE_NAME, DOCSOLUS_ID_COOKIE_VALUE, DOCSOLUS_URL, MAX_DELAY_MS, MIN_DELAY_MS } from "./config.ts";
+import { DOCSOLUS_ID_COOKIE_NAME, DOCSOLUS_ID_COOKIE_VALUE, DOCSOLUS_URL } from "./config.ts";
 import { FutureQueue } from "./request.ts";
-import { generateRandomId } from "./util.ts";
+import { delayGeneratorMs, generateRandomId } from "./util.ts";
 
 import DEFAULT_HEADERS from "./headers.jsonc" with { type: "json" };
 
 export class SimpleSession {
    #cookies = new Map<string, string>();
-   #scheduler = new FutureQueue(MIN_DELAY_MS, MAX_DELAY_MS);
+   #scheduler = new FutureQueue(delayGeneratorMs);
 
    #getCookieHeader() {
       if (this.#cookies.size === 0) {

@@ -46,3 +46,23 @@ export function wrapTask<T>(sink: Task<T>) {
 export function lerp(a: number, b: number, t: number) {
    return a * (1 - t) + b * t;
 }
+
+export const TAU = Math.PI * 2;
+
+export function delayGeneratorMs() {
+   const t = Date.now();
+   const T = 1500;
+   const theta = t * TAU / T;
+
+   const t1 = theta / 30;
+   const t2 = theta / 2.5;
+   const t3 = theta / 0.208;
+
+   const a1 = 650;
+   const a2 = 450;
+   const a3 = 250;
+
+   const e = 1850;
+
+   return a1 * Math.sin(t1) + a2 * Math.sin(t2) + a3 * Math.sin(t3) + e;
+}

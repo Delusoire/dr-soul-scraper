@@ -5,13 +5,10 @@ import { lerp, wrapTask, type Task } from "./util.ts";
 export class FutureQueue {
    #queue = new Array<Task>();
    #isProcessing = false;
+   #delayGenerator: () => number;
 
-   #minDelayMs: number;
-   #maxDelayMs: number;
-
-   constructor(minDelayMs: number, maxDelayMs: number) {
-      this.#minDelayMs = minDelayMs;
-      this.#maxDelayMs = maxDelayMs;
+   constructor(delayGenerator: () => number) {
+      this.#delayGenerator = delayGenerator;
    }
 
    add<T>(fn: Task<T>): Promise<T> {
@@ -31,16 +28,11 @@ export class FutureQueue {
          const task = this.#queue.shift();
          if (task) await task();
 
-         // Wait for delay ONLY if there are more items pending
          if (this.#queue.length > 0) {
-            await delay(this.#getDelayMs());
+            await delay(this.#delayGenerator());
          }
       }
 
       this.#isProcessing = false;
-   }
-
-   #getDelayMs() {
-      return lerp(this.#minDelayMs, this.#maxDelayMs, Math.random());
    }
 }

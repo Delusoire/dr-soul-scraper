@@ -21,3 +21,7 @@ export function parseYearFromCorrigeId(corrigeId: string): number {
    assert(!isNaN(year), "Invalid year in corrige ID");
    return year;
 }
+
+export function checkStringBoolean(string?: string | null | undefined) {
+   return string === "true" || string === "false";
+}

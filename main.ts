@@ -2,7 +2,7 @@ import { assert, unreachable } from "@std/assert";
 import { escape } from "@std/regexp/escape";
 
 import { DOCSOLUS_URL, INCLUDE_MINIATURES } from "./config.ts";
-import { buildCorrigeUrl, buildMiniatureUrl, buildPdfEnonceUrl, buildPdfRapportUrl, fetchCorrigePage, fetchQuestionPage } from "./fetch.ts";
+import { buildCorrigeUrl, buildMiniatureUrl, buildPdfEnonceUrl, buildPdfRapportUrl, fetchAcceuil, fetchCorrigePage, fetchQuestionPage } from "./fetch.ts";
 import { outvalJavascriptLinks } from "./outval_links.ts";
 import { solvePuzzleChallenge } from "./solve_puzzle.ts";
 import type { Corrige, ImageResource, PdfResource, PuzzleResource, Question, Require } from "./types.ts";
@@ -103,11 +103,10 @@ export function downloadPdfs(corrigeId: string) {
 
 
 export async function listCorriges() {
-   const response = await fetch(DOCSOLUS_URL);
-   const text = await response.text();
+   const html = await fetchAcceuil();
 
    const corrigeIdRegex = new RegExp(`href="${escape(buildCorrigeUrl(""))}(?<id>[^"]+)"`, "g");
-   const matches = text.matchAll(corrigeIdRegex);
+   const matches = html.matchAll(corrigeIdRegex);
    const corrigeIds = Array.from(matches, match => match.groups!.id);
 
    return corrigeIds;

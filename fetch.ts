@@ -2,15 +2,40 @@ import { DOMParser } from "@b-fuze/deno-dom";
 import { assert } from "@std/assert";
 import { getSetCookies } from "@std/http/cookie";
 
-import { DOCSOLUS_ID_COOKIE_NAME, DOCSOLUS_ID_COOKIE_VALUE, DOCSOLUS_URL } from "./config.ts";
+import { DOCSOLUS_ID_COOKIE_NAME, DOCSOLUS_ID_COOKIE_VALUE, DOCSOLUS_URL, PROXY_PASSWORD, PROXY_URL, PROXY_USERNAME } from "./config.ts";
 import { FutureQueue } from "./request.ts";
 import { delayGeneratorMs, generateRandomId, getTimestampSeconds, parseYearFromCorrigeId } from "./util.ts";
 
 import DEFAULT_HEADERS from "./headers.json" with { type: "json" };
 
+function initializeHtppClient() {
+   const options: Deno.CreateHttpClientOptions = {};
+
+   if (PROXY_URL) {
+      options.proxy = {
+         url: PROXY_URL,
+      };
+
+      if (PROXY_USERNAME && PROXY_PASSWORD) {
+         options.proxy.basicAuth = {
+            username: PROXY_USERNAME,
+            password: PROXY_PASSWORD,
+         };
+      }
+   }
+
+   const client = Deno.createHttpClient(options);
+   return client;
+}
+
 export class SimpleSession {
    #cookies = new Map<string, string>();
    #scheduler = new FutureQueue(delayGeneratorMs);
+   #httpClient: Deno.HttpClient;
+
+   constructor(httpClient: Deno.HttpClient) {
+      this.#httpClient = httpClient;
+   }
 
    #getCookieHeader() {
       if (this.#cookies.size === 0) {
@@ -24,11 +49,11 @@ export class SimpleSession {
       return cookieHeader;
    }
 
-   #scheduleFetch(input: string | URL, init?: RequestInit) {
+   #scheduleFetch(input: RequestInfo | URL, init?: RequestInit & { client?: Deno.HttpClient; }) {
       return this.#scheduler.add(() => fetch(input, init));
    }
 
-   async fetch(input: string | URL, init?: RequestInit): Promise<Response> {
+   async fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
       const headers = new Headers(init?.headers);
 
       const cookieHeader = this.#getCookieHeader();
@@ -36,7 +61,7 @@ export class SimpleSession {
          headers.set("Cookie", cookieHeader);
       }
 
-      const response = await this.#scheduleFetch(input, { ...init, headers });
+      const response = await this.#scheduleFetch(input, { ...init, headers, client: this.#httpClient });
 
       const setCookieHeaders = getSetCookies(response.headers);
 
@@ -56,8 +81,14 @@ export class SimpleSession {
    }
 }
 
-export const DOCSOLUS_SESSION = new SimpleSession();
+export const DOCSOLUS_SESSION = new SimpleSession(initializeHtppClient());
 DOCSOLUS_SESSION.setCookie(DOCSOLUS_ID_COOKIE_NAME, `${DOCSOLUS_ID_COOKIE_VALUE}.${getTimestampSeconds()}`);
+
+export async function fetchAcceuil() {
+   const response = await DOCSOLUS_SESSION.fetch(DOCSOLUS_URL);
+   const text = await response.text();
+   return text;
+}
 
 export async function fetchCorrigePage(corrigeId: string) {
    const referrer = DOCSOLUS_URL;

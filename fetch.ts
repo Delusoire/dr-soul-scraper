@@ -2,24 +2,17 @@ import { DOMParser } from "@b-fuze/deno-dom";
 import { assert } from "@std/assert";
 import { getSetCookies } from "@std/http/cookie";
 
-import { DOCSOLUS_ID_COOKIE_NAME, DOCSOLUS_ID_COOKIE_VALUE, DOCSOLUS_URL } from "./config.ts";
+import { DOCSOLUS_ID_COOKIE_NAME, DOCSOLUS_ID_COOKIE_VALUE, DOCSOLUS_URL, MAX_DELAY_MS, MIN_DELAY_MS } from "./config.ts";
+import { FutureQueue } from "./request.ts";
 import { generateRandomId } from "./util.ts";
 
-const DEFAULT_HEADERS = {
-   "accept": "*/*",
-   "accept-language": "en-US,en;q=0.9,fr-FR;q=0.8,fr;q=0.7",
-   "sec-ch-ua": "\"Microsoft Edge\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"",
-   "sec-ch-ua-mobile": "?0",
-   "sec-ch-ua-platform": "\"Windows\"",
-   "sec-fetch-dest": "script",
-   "sec-fetch-mode": "no-cors",
-   "sec-fetch-site": "same-origin"
-};
+import DEFAULT_HEADERS from "./headers.jsonc" with { type: "json" };
 
 export class SimpleSession {
    #cookies = new Map<string, string>();
+   #scheduler = new FutureQueue(MIN_DELAY_MS, MAX_DELAY_MS);
 
-   private getCookieHeader() {
+   #getCookieHeader() {
       if (this.#cookies.size === 0) {
          return null;
       }
@@ -31,15 +24,19 @@ export class SimpleSession {
       return cookieHeader;
    }
 
+   #scheduleFetch(input: string | URL, init?: RequestInit) {
+      return this.#scheduler.add(() => fetch(input, init));
+   }
+
    async fetch(input: string | URL, init?: RequestInit): Promise<Response> {
       const headers = new Headers(init?.headers);
 
-      const cookieHeader = this.getCookieHeader();
+      const cookieHeader = this.#getCookieHeader();
       if (cookieHeader) {
          headers.set("Cookie", cookieHeader);
       }
 
-      const response = await fetch(input, { ...init, headers });
+      const response = await this.#scheduleFetch(input, { ...init, headers });
 
       const setCookieHeaders = getSetCookies(response.headers);
 

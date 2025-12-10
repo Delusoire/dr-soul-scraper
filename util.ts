@@ -25,3 +25,24 @@ export function parseYearFromCorrigeId(corrigeId: string): number {
 export function checkStringBoolean(string?: string | null | undefined) {
    return string === "true" || string === "false";
 }
+
+export type Task<T = void> = () => Promise<T>;
+
+export function wrapTask<T>(sink: Task<T>) {
+   const { promise, resolve, reject } = Promise.withResolvers<T>();
+
+   const source = async () => {
+      try {
+         const result = await sink();
+         resolve(result);
+      } catch (error) {
+         reject(error);
+      }
+   };
+
+   return { task: source, future: promise };
+}
+
+export function lerp(a: number, b: number, t: number) {
+   return a * (1 - t) + b * t;
+}

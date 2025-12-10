@@ -1,0 +1,10 @@
+{
+   "accept": "*/*",
+   "accept-language": "en-US,en;q=0.9,fr-FR;q=0.8,fr;q=0.7",
+   "sec-ch-ua": "\"Microsoft Edge\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"",
+   "sec-ch-ua-mobile": "?0",
+   "sec-ch-ua-platform": "\"Windows\"",
+   "sec-fetch-dest": "script",
+   "sec-fetch-mode": "no-cors",
+   "sec-fetch-site": "same-origin"
+}

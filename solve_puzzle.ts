@@ -48,12 +48,12 @@ async function solveJavascriptPuzzle(javascriptPuzzle: string) {
 
 
 
-export async function solvePuzzleChallenge(referrer: string, questionId: string, md5Hash: string) {
-   const tilesPuzzle = await fetchTilesPuzzle(referrer, questionId, md5Hash);
+export async function solvePuzzleChallenge(questionId: string, md5Hash: string) {
+   const tilesPuzzle = await fetchTilesPuzzle(questionId, md5Hash);
 
    const { lehmerPayloadUrl, tileDataUrls } = await solveJavascriptPuzzle(tilesPuzzle);
 
-   const lehmerPayload = await fetchLehmerPayload(referrer, lehmerPayloadUrl);
+   const lehmerPayload = await fetchLehmerPayload(questionId, md5Hash, lehmerPayloadUrl);
 
    const tileMap = generateMap(lehmerPayload);
 

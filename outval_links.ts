@@ -17,7 +17,7 @@ export async function outvalJavascriptLinks(mangledScript: string) {
    const injectedScript = await promise;
 
    const matches = injectedScript.matchAll(LINK_FN_CALL_SIG);
-   const links = matches.map(match => match.groups as MATCHED_LINK);
+   const links = Array.from(matches, match => match.groups as MATCHED_LINK);
 
-   return Array.from(links);
+   return links;
 }

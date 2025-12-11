@@ -53,12 +53,10 @@ export const TAU = Math.PI * 2;
 
 export function slowDelayGeneratorMs() {
    const t = Date.now();
-   const T = 30000;
-   const theta = t * TAU / T;
 
-   const t1 = theta * 10;
-   const t2 = theta;
-   const t3 = theta / 10;
+   const t1 = t * TAU / 3000;
+   const t2 = t * TAU / 30000;
+   const t3 = t * TAU / 300000;
 
    const a1 = 3000;
    const a2 = 8000;

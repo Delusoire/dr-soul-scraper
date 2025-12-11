@@ -10,10 +10,12 @@ const _DOCSOLUS_ID_COOKIE_VALUE = Deno.env.get("DOCSOLUS_ID_COOKIE");
 assert(_DOCSOLUS_ID_COOKIE_VALUE, "Missing DOCSOLUS_ID_COOKIE_VALUE env var");
 export const DOCSOLUS_ID_COOKIE_VALUE = _DOCSOLUS_ID_COOKIE_VALUE;
 
-const _INCLUDE_MINIATURES = Deno.env.get("INCLUDE_MINIATURES");
+const _INCLUDE_MINIATURES = Deno.env.get("INCLUDE_MINIATURES") ?? "true";
 assert(checkStringBoolean(_INCLUDE_MINIATURES), "INCLUDE_MINIATURES env var must be 'true' or 'false'");
 export const INCLUDE_MINIATURES = _INCLUDE_MINIATURES === "true";
 
 export const PROXY_URL = Deno.env.get("PROXY_URL");
 export const PROXY_USERNAME = Deno.env.get("PROXY_USERNAME");
 export const PROXY_PASSWORD = Deno.env.get("PROXY_PASSWORD");
+
+export const TILES_PER_ROW = 20;

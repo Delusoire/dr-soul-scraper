@@ -102,11 +102,25 @@ export async function downloadCorrige(corrigeId: string) {
    const injectedScriptText = injectedScript?.textContent;
    assert(injectedScriptText, "Expected injected script to have text content");
 
+   const metadatas = Array.from(doc.body.querySelectorAll("table>tbody>tr>td.tabright"));
+   if (metadatas.length !== 3) {
+      unreachable("Corrige metadata table not found");
+   }
+
+   const theme = metadatas[0].innerHTML;
+   const outils = metadatas[1].innerText.split(", ");
+   const motcles = metadatas[2].innerText.split(", ");
+
    const links = await outvalJavascriptLinks(injectedScriptText);
 
-   const corrige: Require<Corrige, "questions"> = {
+   const corrige: Require<Corrige, "questions" | "metadata"> = {
       id: corrigeId,
       questions: [],
+      metadata: {
+         theme,
+         outils,
+         motcles,
+      },
    };
 
    for (const link of links) {

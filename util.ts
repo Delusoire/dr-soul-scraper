@@ -1,4 +1,6 @@
-import { assert } from "@std/assert";
+import { assert, assertExists } from "@std/assert";
+import { join } from "@std/path";
+import { ensureDir } from "@std/fs";
 
 export function generateRandomId(length = 8): string {
    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -49,20 +51,20 @@ export function lerp(a: number, b: number, t: number) {
 
 export const TAU = Math.PI * 2;
 
-export function delayGeneratorMs() {
+export function slowDelayGeneratorMs() {
    const t = Date.now();
-   const T = 1500;
+   const T = 30000;
    const theta = t * TAU / T;
 
-   const t1 = theta / 30;
-   const t2 = theta / 2.5;
-   const t3 = theta / 0.208;
+   const t1 = theta * 10;
+   const t2 = theta;
+   const t3 = theta / 10;
 
-   const a1 = 650;
-   const a2 = 450;
-   const a3 = 250;
+   const a1 = 3000;
+   const a2 = 8000;
+   const a3 = 13000;
 
-   const e = 1850;
+   const e = 30000;
 
    return a1 * Math.sin(t1) + a2 * Math.sin(t2) + a3 * Math.sin(t3) + e;
 }
@@ -83,4 +85,17 @@ export function parseFixedWidthIntegers(digitStream: string, chunkSize: number) 
    }
 
    return integerSegments;
+}
+
+export async function downloadFile(url: string, directory: string, filename: string) {
+   const response = await fetch(url);
+
+   assert(response.ok, `Failed to download file: ${response.status} ${response.statusText}`);
+   assertExists(response.body, "Failed to download file: no body");
+
+   await ensureDir(directory);
+   const path = join(directory, filename);
+   const file = await Deno.create(path);
+
+   await response.body.pipeTo(file.writable);
 }

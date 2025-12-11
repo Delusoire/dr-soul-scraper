@@ -4,7 +4,7 @@ import { getSetCookies } from "@std/http/cookie";
 
 import { DOCSOLUS_ID_COOKIE_NAME, DOCSOLUS_ID_COOKIE_VALUE, DOCSOLUS_URL, PROXY_PASSWORD, PROXY_URL, PROXY_USERNAME } from "./config.ts";
 import { FutureQueue } from "./future_queue.ts";
-import { delayGeneratorMs, generateRandomId, getTimestampSeconds, parseYearFromCorrigeId } from "./util.ts";
+import { slowDelayGeneratorMs, generateRandomId, getTimestampSeconds, parseYearFromCorrigeId } from "./util.ts";
 
 import DEFAULT_HEADERS from "./headers.json" with { type: "json" };
 import { getLogger } from "@logtape/logtape";
@@ -33,7 +33,7 @@ function initializeHtppClient() {
 
 export class SimpleSession {
    #cookies = new Map<string, string>();
-   #scheduler = new FutureQueue(delayGeneratorMs);
+   #scheduler = new FutureQueue(slowDelayGeneratorMs);
    #httpClient: Deno.HttpClient;
 
    constructor(httpClient: Deno.HttpClient) {

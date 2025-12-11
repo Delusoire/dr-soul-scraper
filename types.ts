@@ -25,9 +25,16 @@ export type Question = {
    miniature?: ImageResource;
 };
 
+export interface CorrigeMetadata {
+   theme: string;
+   outils: string[];
+   motcles: string[];
+}
+
 export type Corrige = {
    id: string;
    questions?: Question[];
    enonce?: PdfResource;
    rapport?: PdfResource;
+   metadata?: CorrigeMetadata;
 };

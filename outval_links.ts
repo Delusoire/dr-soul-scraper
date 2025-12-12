@@ -1,10 +1,10 @@
 
 import { getLogger } from "@logtape/logtape";
-import { unreachable } from "@std/assert";
+import { unreachable } from "@std/assert/unreachable";
 
-import { parseFixedWidthIntegers } from "./util.ts";
-import { importNodeVm, importQuickJS } from "./deps.ts";
 import { EVAL_STRATEGY } from "./config.ts";
+import { importNodeVm, importQuickJS } from "./deps.ts";
+import { parseFixedWidthIntegers } from "./util.ts";
 
 const LINK_FN_CALL_SIG = /link\("[a-zA-Z0-9]{8}","(?<id>[^"]+)","(?<short>[^"]+)","(?<preHash>[a-f0-9]{77})"\);/g;
 type MATCHED_LINK = { id: string; short: string; hash: string; };

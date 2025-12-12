@@ -1,6 +1,6 @@
 
 
-import { assertExists } from "@std/assert";
+import { assertExists } from "@std/assert/exists";
 
 import { EVAL_STRATEGY } from "./config.ts";
 

@@ -1,6 +1,6 @@
 import { assert, assertExists } from "@std/assert";
-import { join } from "@std/path";
-import { ensureDir } from "@std/fs";
+import { ensureDir } from "@std/fs/ensure-dir";
+import { join } from "@std/path/join";
 
 export function generateRandomId( length = 8 ): string {
    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -85,17 +85,21 @@ export function parseFixedWidthIntegers( digitStream: string, chunkSize: number 
    return integerSegments;
 }
 
-export async function downloadFile( url: string, directory: string, filename: string ) {
+export async function downloadStream( url: string ) {
    const response = await fetch( url );
 
-   assert( response.ok, `Failed to download file: ${ response.status } ${ response.statusText }` );
-   assertExists( response.body, "Failed to download file: no body" );
+   assert( response.ok, `Failed to download readable: ${ response.status } ${ response.statusText }` );
+   assertExists( response.body, "Failed to download readable: no body" );
 
+   return response.body;
+}
+
+export async function saveToFile( stream: ReadableStream, directory: string, filename: string ) {
    await ensureDir( directory );
    const path = join( directory, filename );
    const file = await Deno.create( path );
 
-   await response.body.pipeTo( file.writable );
+   await stream.pipeTo( file.writable );
 }
 
 export function wrapSignal( signal: AbortSignal, reason?: unknown ): AbortSignal {
@@ -111,4 +115,28 @@ export function wrapSignal( signal: AbortSignal, reason?: unknown ): AbortSignal
    }, { once: true } );
 
    return controller.signal;
+}
+
+export class MeteredStream extends TransformStream<Uint8Array, Uint8Array> {
+   #size = 0;
+
+   constructor() {
+      super( {
+         transform: ( chunk, controller ) => {
+            this.#size += chunk.byteLength;
+            controller.enqueue( chunk );
+         }
+      } );
+   }
+
+   get size() {
+      return this.#size;
+   }
+}
+
+export function meterStream( stream: ReadableStream<Uint8Array> ) {
+   const [ streamToMeter, streamToConsume ] = stream.tee();
+   const meteredStream = new MeteredStream();
+   streamToMeter.pipeThrough( meteredStream );
+   return { size: meteredStream.size, readable: streamToConsume };
 }

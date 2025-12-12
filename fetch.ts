@@ -1,13 +1,13 @@
 import { DOMParser } from "@b-fuze/deno-dom";
-import { assert } from "@std/assert";
+import { assert } from "@std/assert/assert";
 import { getSetCookies } from "@std/http/cookie";
 
 import { DOCSOLUS_ID_COOKIE_NAME, DOCSOLUS_ID_COOKIE_VALUE, DOCSOLUS_URL, PROXY_PASSWORD, PROXY_URL, PROXY_USERNAME } from "./config.ts";
 import { FutureQueue } from "./future_queue.ts";
-import { slowDelayGeneratorMs, generateRandomId, getTimestampSeconds, parseYearFromCorrigeId } from "./util.ts";
+import { generateRandomId, getTimestampSeconds, parseYearFromCorrigeId, slowDelayGeneratorMs } from "./util.ts";
 
-import DEFAULT_HEADERS from "./headers.json" with { type: "json" };
 import { getLogger } from "@logtape/logtape";
+import DEFAULT_HEADERS from "./headers.json" with { type: "json" };
 
 const l = getLogger( [ "dss", "fetcher" ] );
 

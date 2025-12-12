@@ -1,5 +1,5 @@
-import { delay } from "@std/async/delay";
 import { getLogger } from "@logtape/logtape";
+import { delay } from "@std/async/delay";
 
 import { wrapTask, type Task } from "./util.ts";
 

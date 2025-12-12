@@ -1,8 +1,8 @@
 import type { Context } from "node:vm";
 
 import { getLogger } from "@logtape/logtape";
-import { unreachable } from "@std/assert";
-import { abortable } from "@std/async";
+import { unreachable } from "@std/assert/unreachable";
+import { abortable } from "@std/async/abortable";
 import type { QuickJSContext } from "quickjs-emscripten";
 
 import { EVAL_STRATEGY, EVAL_TIMEOUT_MS } from "./config.ts";
@@ -64,6 +64,8 @@ async function runJavascriptPuzzle_QuickJS( javascriptPuzzle: string ) {
 
    return { lehmerPayloadUrl, tileDataUrls };
 
+
+
    function extractTileDataUrls( vm: QuickJSContext ) {
       const globalDump = vm.dump( vm.global );
       for ( const key of Object.keys( globalDump ) ) {
@@ -113,6 +115,8 @@ async function runJavascriptPuzzle_NodeVm( javascriptPuzzle: string ) {
 
    return { lehmerPayloadUrl, tileDataUrls };
 
+
+
    function extractTileDataUrls( sandbox: Context ) {
       for ( const key of Object.keys( sandbox ) ) {
          if ( !keys.has( key ) ) {
@@ -145,17 +149,14 @@ async function runJavascriptPuzzle( javascriptPuzzle: string ) {
 
 export async function solvePuzzleChallenge( questionId: string, md5Hash: string ) {
    const tilesPuzzle = await fetchTilesPuzzle( questionId, md5Hash );
-
    const { lehmerPayloadUrl, tileDataUrls } = await runJavascriptPuzzle( tilesPuzzle );
 
    const { payload } = await fetchLehmerPayload( questionId, md5Hash, lehmerPayloadUrl );
-
    const tileMap = generateChallengeMap( payload );
 
    const orderedTileDataUrls = tileMap.map( i => tileDataUrls[ i ] );
 
    l.trace`Solved puzzle with ${ orderedTileDataUrls.length } tiles`;
-
    return orderedTileDataUrls;
 }
 

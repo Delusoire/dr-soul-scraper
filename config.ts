@@ -1,4 +1,4 @@
-import { assert } from "@std/assert";
+import { assert } from "@std/assert/assert";
 
 import { checkStringBoolean } from "./util.ts";
 

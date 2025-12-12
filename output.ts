@@ -1,3 +1,4 @@
+import { getLogger } from "@logtape/logtape";
 import { unreachable } from "@std/assert/unreachable";
 import { decodeBase64 } from "@std/encoding/base64";
 import { join } from "@std/path/join";
@@ -8,6 +9,9 @@ import { PDFDocument, PDFImage } from "pdf-lib";
 import { TILES_PER_ROW } from "./config.ts";
 import type { Corrige, PdfResource, Question, QuestionResource } from "./types.ts";
 import { downloadStream, meterStream, saveToFile } from "./util.ts";
+
+// TODO: more logging
+const l = getLogger( [ "dss", "output" ] );
 
 function getCorrigeTitle( corrige: Corrige ) {
    return `${ corrige.id }.corrige.pdf`;

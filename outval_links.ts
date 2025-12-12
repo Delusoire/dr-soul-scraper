@@ -1,28 +1,77 @@
-import vm from "node:vm";
 
 import { getLogger } from "@logtape/logtape";
 import { unreachable } from "@std/assert";
 
 import { parseFixedWidthIntegers } from "./util.ts";
+import { importNodeVm, importQuickJS } from "./deps.ts";
+import { EVAL_STRATEGY } from "./config.ts";
 
 const LINK_FN_CALL_SIG = /link\("[a-zA-Z0-9]{8}","(?<id>[^"]+)","(?<short>[^"]+)","(?<preHash>[a-f0-9]{77})"\);/g;
 type MATCHED_LINK = { id: string; short: string; hash: string; };
 
 const l = getLogger( [ "dss", "outval" ] );
 
-export async function outvalJavascriptLinks( mangledScript: string ) {
+async function outvalJavascriptLinks_QuickJS( mangledScript: string ) {
+   const QUICKJS = importQuickJS();
+
    const { promise, resolve } = Promise.withResolvers<string>();
 
-   const sandbox = vm.createContext( {
+   const QuickJS = await QUICKJS.getQuickJS();
+   const vm = QuickJS.newContext();
+
+   const evalFn = vm.newFunction( "eval", ( handle ) => {
+      const injectedScript = vm.getString( handle );
+      resolve( injectedScript );
+   } );
+   vm.setProp( vm.global, "eval", evalFn );
+   evalFn.dispose();
+
+   l.trace`Scraping links from javascript...`;
+   const result = vm.evalCode( mangledScript );
+
+   if ( result.error ) {
+      const error = vm.dump( result.error );
+      result.error.dispose();
+      l.warn`Script execution error: ${ error }`;
+   } else {
+      result.value.dispose();
+   }
+
+   const injectedScript = await promise;
+   vm.dispose();
+
+   return injectedScript;
+}
+
+async function outvalJavascriptLinks_NodeVm( mangledScript: string ) {
+   const NodeVM = importNodeVm();
+
+   const { promise, resolve } = Promise.withResolvers<string>();
+
+   const sandbox = NodeVM.createContext( {
       eval: ( injectedScript: string ) => {
          resolve( injectedScript );
       }
    } );
 
    l.trace`Scraping links from javascript...`;
-   vm.runInContext( mangledScript, sandbox );
+   NodeVM.runInContext( mangledScript, sandbox );
 
    const injectedScript = await promise;
+
+   return injectedScript;
+}
+
+export async function outvalJavascriptLinks( mangledScript: string ) {
+   let injectedScript: string;
+
+   if ( EVAL_STRATEGY === "quickjs" ) {
+      injectedScript = await outvalJavascriptLinks_QuickJS( mangledScript );
+   } else if ( EVAL_STRATEGY === "node_vm" ) {
+      injectedScript = await outvalJavascriptLinks_NodeVm( mangledScript );
+   } else {
+      unreachable( `Unsupported EVAL_STRATEGY: ${ EVAL_STRATEGY }` );
+   }
 
    const matches = injectedScript.matchAll( LINK_FN_CALL_SIG );
    const links = matches

@@ -1,21 +1,95 @@
-import vm from "node:vm";
+import type { Context } from "node:vm";
 
 import { getLogger } from "@logtape/logtape";
 import { unreachable } from "@std/assert";
+import { abortable } from "@std/async";
+import type { QuickJSContext } from "quickjs-emscripten";
 
+import { EVAL_STRATEGY, EVAL_TIMEOUT_MS } from "./config.ts";
+import { importNodeVm, importQuickJS } from "./deps.ts";
 import { fetchLehmerPayload, fetchTilesPuzzle } from "./fetch.ts";
-import { isBase64Array, parseFixedWidthIntegers } from "./util.ts";
+import { isBase64Array, parseFixedWidthIntegers, wrapSignal } from "./util.ts";
 
 const l = getLogger( [ "dss", "solver" ] );
 
-async function runJavascriptPuzzle( javascriptPuzzle: string ) {
+async function runJavascriptPuzzle_QuickJS( javascriptPuzzle: string ) {
+   const QUICKJS = importQuickJS();
+
+   const { promise, resolve } = Promise.withResolvers<string>();
+
+   const QuickJS = await QUICKJS.getQuickJS();
+   const vm = QuickJS.newContext();
+
+   const createRequestFn = vm.newFunction( "createRequest", () => {
+      const requestObj = vm.newObject();
+      const openFn = vm.newFunction( "open", ( _methodHandle, urlHandle, _asyncHandle ) => {
+         const url = vm.getString( urlHandle );
+         resolve( url );
+      } );
+      vm.setProp( requestObj, "open", openFn );
+      openFn.dispose();
+
+      const sendFn = vm.newFunction( "send", () => { } );
+      vm.setProp( requestObj, "send", sendFn );
+      sendFn.dispose();
+
+      return requestObj;
+   } );
+   vm.setProp( vm.global, "createRequest", createRequestFn );
+   createRequestFn.dispose();
+
+   const keys = new Set( Object.keys( vm.dump( vm.global ) ) );
+
+   l.trace`Running javascript puzzle in sandbox...`;
+   const result = vm.evalCode( javascriptPuzzle );
+
+   if ( result.error ) {
+      const error = vm.dump( result.error );
+      result.error.dispose();
+      l.warn`Script execution error: ${ error }`;
+   } else {
+      result.value.dispose();
+   }
+
+   const lehmerPayloadUrl = await abortable(
+      promise,
+      wrapSignal( AbortSignal.timeout( EVAL_TIMEOUT_MS ), "Timed out waiting for Lehmer payload URL" )
+   );
+   l.trace`Extracted Lehmer payload URL: ${ lehmerPayloadUrl }`;
+
+   const tileDataUrls = extractTileDataUrls( vm );
+   l.trace`Extracted ${ tileDataUrls.length } tile data URLs`;
+
+   vm.dispose();
+
+   return { lehmerPayloadUrl, tileDataUrls };
+
+   function extractTileDataUrls( vm: QuickJSContext ) {
+      const globalDump = vm.dump( vm.global );
+      for ( const key of Object.keys( globalDump ) ) {
+         if ( !keys.has( key ) ) {
+            const value = globalDump[ key ];
+            if ( Array.isArray( value ) && value.length > 0 ) {
+               if ( isBase64Array( value ) ) {
+                  return value;
+               }
+            }
+         }
+      }
+
+      unreachable( "Tile data URLs not found in sandbox" );
+   }
+}
+
+async function runJavascriptPuzzle_NodeVm( javascriptPuzzle: string ) {
+   const vm = importNodeVm();
+
    const { promise, resolve } = Promise.withResolvers<string>();
 
    const sandbox = vm.createContext( {
       createRequest: () => {
          return {
-            open( method: string, url: string, async: boolean ) {
-               // `/lib/mason/puzzles/30.ajax.html?q=${getTimestampSeconds()}${/\w{8}\.\d{3}/}`
+            open( _method: string, url: string, _async: boolean ) {
                resolve( url );
             },
             send() { }
@@ -28,7 +102,10 @@ async function runJavascriptPuzzle( javascriptPuzzle: string ) {
    l.trace`Running javascript puzzle in sandbox...`;
    vm.runInContext( javascriptPuzzle, sandbox );
 
-   const lehmerPayloadUrl = await promise;
+   const lehmerPayloadUrl = await abortable(
+      promise,
+      wrapSignal( AbortSignal.timeout( EVAL_TIMEOUT_MS ), "Timed out waiting for Lehmer payload URL" )
+   );
    l.trace`Extracted Lehmer payload URL: ${ lehmerPayloadUrl }`;
 
    const tileDataUrls = extractTileDataUrls( sandbox );
@@ -36,10 +113,10 @@ async function runJavascriptPuzzle( javascriptPuzzle: string ) {
 
    return { lehmerPayloadUrl, tileDataUrls };
 
-   function extractTileDataUrls( sandbox: vm.Context ) {
+   function extractTileDataUrls( sandbox: Context ) {
       for ( const key of Object.keys( sandbox ) ) {
          if ( !keys.has( key ) ) {
-            const value = ( sandbox as any )[ key ];
+            const value = sandbox[ key ];
             if ( Array.isArray( value ) && value.length > 0 ) {
                if ( isBase64Array( value ) ) {
                   return value;
@@ -50,6 +127,20 @@ async function runJavascriptPuzzle( javascriptPuzzle: string ) {
 
       unreachable( "Tile data URLs not found in sandbox" );
    }
+}
+
+async function runJavascriptPuzzle( javascriptPuzzle: string ) {
+   let result: { lehmerPayloadUrl: string; tileDataUrls: string[]; };
+
+   if ( EVAL_STRATEGY === "quickjs" ) {
+      result = await runJavascriptPuzzle_QuickJS( javascriptPuzzle );
+   } else if ( EVAL_STRATEGY === "node_vm" ) {
+      result = await runJavascriptPuzzle_NodeVm( javascriptPuzzle );
+   } else {
+      unreachable( `Unsupported EVAL_STRATEGY: ${ EVAL_STRATEGY }` );
+   }
+
+   return result;
 }
 
 export async function solvePuzzleChallenge( questionId: string, md5Hash: string ) {

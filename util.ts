@@ -13,7 +13,7 @@ export function generateRandomId( length = 8 ): string {
 
 const BASE_64 = /^[A-Za-z0-9+/]+={0,2}$/;
 
-export function isBase64Array( arr: any[] ): arr is string[] {
+export function isBase64Array( arr: unknown[] ): arr is string[] {
    return arr.every( v => typeof v === "string" && BASE_64.test( v ) );
 };
 
@@ -96,4 +96,19 @@ export async function downloadFile( url: string, directory: string, filename: st
    const file = await Deno.create( path );
 
    await response.body.pipeTo( file.writable );
+}
+
+export function wrapSignal( signal: AbortSignal, reason?: unknown ): AbortSignal {
+   const controller = new AbortController();
+
+   if ( signal.aborted ) {
+      controller.abort( reason );
+      return controller.signal;
+   }
+
+   signal.addEventListener( "abort", () => {
+      controller.abort( reason );
+   }, { once: true } );
+
+   return controller.signal;
 }

@@ -2,20 +2,20 @@ import { assert } from "@std/assert";
 
 import { checkStringBoolean } from "./util.ts";
 
-export const DOCSOLUS_URL = Deno.env.get("DOCSOLUS_URL") ?? "https://www.doc-solus.fr";
+export const DOCSOLUS_URL = Deno.env.get( "DOCSOLUS_URL" ) ?? "https://www.doc-solus.fr";
 
 export const DOCSOLUS_ID_COOKIE_NAME = "ck_id";
 
-const _DOCSOLUS_ID_COOKIE_VALUE = Deno.env.get("DOCSOLUS_ID_COOKIE");
-assert(_DOCSOLUS_ID_COOKIE_VALUE, "Missing DOCSOLUS_ID_COOKIE_VALUE env var");
+const _DOCSOLUS_ID_COOKIE_VALUE = Deno.env.get( "DOCSOLUS_ID_COOKIE" );
+assert( _DOCSOLUS_ID_COOKIE_VALUE, "Missing DOCSOLUS_ID_COOKIE_VALUE env var" );
 export const DOCSOLUS_ID_COOKIE_VALUE = _DOCSOLUS_ID_COOKIE_VALUE;
 
-const _INCLUDE_MINIATURES = Deno.env.get("INCLUDE_MINIATURES") ?? "true";
-assert(checkStringBoolean(_INCLUDE_MINIATURES), "INCLUDE_MINIATURES env var must be 'true' or 'false'");
+const _INCLUDE_MINIATURES = Deno.env.get( "INCLUDE_MINIATURES" ) ?? "true";
+assert( checkStringBoolean( _INCLUDE_MINIATURES ), "INCLUDE_MINIATURES env var must be 'true' or 'false'" );
 export const INCLUDE_MINIATURES = _INCLUDE_MINIATURES === "true";
 
-export const PROXY_URL = Deno.env.get("PROXY_URL");
-export const PROXY_USERNAME = Deno.env.get("PROXY_USERNAME");
-export const PROXY_PASSWORD = Deno.env.get("PROXY_PASSWORD");
+export const PROXY_URL = Deno.env.get( "PROXY_URL" );
+export const PROXY_USERNAME = Deno.env.get( "PROXY_USERNAME" );
+export const PROXY_PASSWORD = Deno.env.get( "PROXY_PASSWORD" );
 
 export const TILES_PER_ROW = 20;

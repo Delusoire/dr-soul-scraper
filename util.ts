@@ -2,51 +2,51 @@ import { assert, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 
-export function generateRandomId(length = 8): string {
+export function generateRandomId( length = 8 ): string {
    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
    let result = "";
-   for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+   for ( let i = 0; i < length; i++ ) {
+      result += chars.charAt( Math.floor( Math.random() * chars.length ) );
    }
    return result;
 }
 
 const BASE_64 = /^[A-Za-z0-9+/]+={0,2}$/;
 
-export function isBase64Array(arr: any[]): arr is string[] {
-   return arr.every(v => typeof v === "string" && BASE_64.test(v));
+export function isBase64Array( arr: any[] ): arr is string[] {
+   return arr.every( v => typeof v === "string" && BASE_64.test( v ) );
 };
 
-export function parseYearFromCorrigeId(corrigeId: string): number {
-   const yearStr = corrigeId.slice(-4);
-   const year = parseInt(yearStr, 10);
-   assert(!isNaN(year), "Invalid year in corrige ID");
+export function parseYearFromCorrigeId( corrigeId: string ): number {
+   const yearStr = corrigeId.slice( -4 );
+   const year = parseInt( yearStr, 10 );
+   assert( !isNaN( year ), "Invalid year in corrige ID" );
    return year;
 }
 
-export function checkStringBoolean(string?: string | null | undefined) {
+export function checkStringBoolean( string?: string | null | undefined ) {
    return string === "true" || string === "false";
 }
 
 export type Task<T = void> = () => Promise<T>;
 
-export function wrapTask<T>(sink: Task<T>) {
+export function wrapTask<T>( sink: Task<T> ) {
    const { promise, resolve, reject } = Promise.withResolvers<T>();
 
    const source = async () => {
       try {
          const result = await sink();
-         resolve(result);
-      } catch (error) {
-         reject(error);
+         resolve( result );
+      } catch ( error ) {
+         reject( error );
       }
    };
 
    return { task: source, future: promise };
 }
 
-export function lerp(a: number, b: number, t: number) {
-   return a * (1 - t) + b * t;
+export function lerp( a: number, b: number, t: number ) {
+   return a * ( 1 - t ) + b * t;
 }
 
 export const TAU = Math.PI * 2;
@@ -64,36 +64,36 @@ export function slowDelayGeneratorMs() {
 
    const e = 30000;
 
-   return a1 * Math.sin(t1) + a2 * Math.sin(t2) + a3 * Math.sin(t3) + e;
+   return a1 * Math.sin( t1 ) + a2 * Math.sin( t2 ) + a3 * Math.sin( t3 ) + e;
 }
 
 export function getTimestampSeconds() {
-   return Math.floor(Date.now() / 1000);
+   return Math.floor( Date.now() / 1000 );
 }
 
-export function parseFixedWidthIntegers(digitStream: string, chunkSize: number) {
-   const chunkCount = Math.floor(digitStream.length / chunkSize);
+export function parseFixedWidthIntegers( digitStream: string, chunkSize: number ) {
+   const chunkCount = Math.floor( digitStream.length / chunkSize );
 
-   const integerSegments = new Array<number>(chunkCount);
+   const integerSegments = new Array<number>( chunkCount );
 
-   for (let i = 0; i < chunkCount; i++) {
+   for ( let i = 0; i < chunkCount; i++ ) {
       const start = chunkSize * i;
-      const segmentString = digitStream.slice(start, start + chunkSize);
-      integerSegments[i] = parseInt(segmentString, 10);;
+      const segmentString = digitStream.slice( start, start + chunkSize );
+      integerSegments[ i ] = parseInt( segmentString, 10 );;
    }
 
    return integerSegments;
 }
 
-export async function downloadFile(url: string, directory: string, filename: string) {
-   const response = await fetch(url);
+export async function downloadFile( url: string, directory: string, filename: string ) {
+   const response = await fetch( url );
 
-   assert(response.ok, `Failed to download file: ${response.status} ${response.statusText}`);
-   assertExists(response.body, "Failed to download file: no body");
+   assert( response.ok, `Failed to download file: ${ response.status } ${ response.statusText }` );
+   assertExists( response.body, "Failed to download file: no body" );
 
-   await ensureDir(directory);
-   const path = join(directory, filename);
-   const file = await Deno.create(path);
+   await ensureDir( directory );
+   const path = join( directory, filename );
+   const file = await Deno.create( path );
 
-   await response.body.pipeTo(file.writable);
+   await response.body.pipeTo( file.writable );
 }

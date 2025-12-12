@@ -1,8 +1,8 @@
 import { configure, getConsoleSink } from "@logtape/logtape";
 
-await configure({
+await configure( {
    sinks: { console: getConsoleSink() },
    loggers: [
-      { category: "dss", lowestLevel: "trace", sinks: ["console"] }
+      { category: "dss", lowestLevel: "trace", sinks: [ "console" ] }
    ]
-});
+} );

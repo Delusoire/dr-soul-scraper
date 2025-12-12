@@ -6,7 +6,7 @@ import { wrapTask, type Task } from "./util.ts";
 const l = getLogger( [ "dss", "queue" ] );
 
 export class FutureQueue {
-   #queue = new Array<Task>();
+   #queue = new Array<[ number, Task ]>();
    #isProcessing = false;
    #delayGenerator: () => number;
 
@@ -14,10 +14,10 @@ export class FutureQueue {
       this.#delayGenerator = delayGenerator;
    }
 
-   add<T>( fn: Task<T> ): Promise<T> {
+   add<T>( fn: Task<T>, delayMs?: number ): Promise<T> {
       const { task, future } = wrapTask( fn );
 
-      this.#queue.push( task );
+      this.#queue.push( [ delayMs ?? this.#delayGenerator(), task ] );
       this.#process();
 
       return future;
@@ -28,12 +28,10 @@ export class FutureQueue {
       this.#isProcessing = true;
 
       while ( this.#queue.length > 0 ) {
-         const task = this.#queue.shift();
-         if ( task ) await task();
-
-         const delayMs = this.#delayGenerator();
+         const [ delayMs, task ] = this.#queue.shift()!;
          l.trace`Delaying next task by ${ delayMs } ms`;
          await delay( delayMs );
+         await task();
       }
 
       this.#isProcessing = false;

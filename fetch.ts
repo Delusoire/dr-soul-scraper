@@ -52,16 +52,16 @@ export class SimpleSession {
       return cookieHeader;
    }
 
-   #scheduleFetch( input: RequestInfo | URL, init?: RequestInit & { client?: Deno.HttpClient; } ) {
+   #scheduleFetch( input: RequestInfo | URL, init?: RequestInit & { client?: Deno.HttpClient; }, delayMs?: number ) {
       l.trace`Scheduling fetch: ${ input.toString() }`;
       return this.#scheduler.add( async () => {
          const response = await fetch( input, init );
          l.trace`Fetched: ${ response.url }`;
          return response;
-      } );
+      }, delayMs );
    }
 
-   async fetch( input: RequestInfo | URL, init?: RequestInit ): Promise<Response> {
+   async fetch( input: RequestInfo | URL, init?: RequestInit, delayMs?: number ): Promise<Response> {
       const headers = new Headers( init?.headers );
 
       const cookieHeader = this.#getCookieHeader();
@@ -135,7 +135,7 @@ export async function fetchTilesPuzzle( questionId: string, md5Hash: string, id 
       headers: DEFAULT_HEADERS,
       referrer,
       method: "GET",
-   } );
+   }, 0 );
 
    const responseText20 = await response20.text();
 
@@ -148,7 +148,7 @@ export async function fetchLehmerPayload( questionId: string, mdf5Hash: string, 
       headers: DEFAULT_HEADERS,
       referrer,
       method: "GET",
-   } );
+   }, 0 );
 
    const responseText30 = await response30.text();
 

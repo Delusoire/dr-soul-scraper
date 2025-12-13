@@ -6,3 +6,9 @@ await configure( {
       { category: "dss", lowestLevel: "trace", sinks: [ "console" ] }
    ]
 } );
+
+await Deno.cron( "periodic scraper", {
+   hour: { every: 2 },
+}, () => {
+
+} );
